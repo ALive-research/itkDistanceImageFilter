@@ -1,20 +1,3 @@
-/*=========================================================================
- *
- *  Copyright NumFOCUS
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0.txt
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *=========================================================================*/
 #ifndef itkDistanceImageFilter_hxx
 #define itkDistanceImageFilter_hxx
 
@@ -37,13 +20,14 @@ DistanceImageFilter<TInputImage, TOutputImage>::DistanceImageFilter()
   , m_InputCache(nullptr)
 {
   this->DynamicMultiThreadingOff();
+  this->m_TreeGenerator = TreeGeneratorType::New();
 }
 
 template <typename TInputImage, typename TOutputImage>
 unsigned int
 DistanceImageFilter<TInputImage, TOutputImage>::SplitRequestedRegion(unsigned int            i,
-                                                                                    unsigned int            num,
-                                                                                    OutputImageRegionType & splitRegion)
+                                                                     unsigned int            num,
+                                                                     OutputImageRegionType & splitRegion)
 {
   // Get the output pointer
   OutputImageType * outputPtr = this->GetOutput();
@@ -114,42 +98,12 @@ DistanceImageFilter<TInputImage, TOutputImage>::GenerateData()
   auto progressAcc = ProgressAccumulator::New();
   progressAcc->SetMiniPipelineFilter(this);
 
-  // // compute the boundary of the binary object.
-  // // To do that, we erode the binary object. The eroded pixels are the ones
-  // // on the boundary. We mark them with the value 2
-  // auto binaryFilter = BinaryFilterType::New();
-
-  // binaryFilter->SetLowerThreshold(this->m_BackgroundValue);
-  // binaryFilter->SetUpperThreshold(this->m_BackgroundValue);
-  // binaryFilter->SetInsideValue(NumericTraits<OutputPixelType>::max());
-  // binaryFilter->SetOutsideValue(NumericTraits<OutputPixelType>::ZeroValue());
-  // binaryFilter->SetInput(inputPtr);
-  // binaryFilter->SetNumberOfWorkUnits(numberOfWorkUnits);
-  // progressAcc->RegisterInternalFilter(binaryFilter, 0.1f);
-  // binaryFilter->GraftOutput(outputPtr);
-  // binaryFilter->Update();
-
-  // // Dilate the inverted image by 1 pixel to give it the same boundary
-  // // as the univerted inputPtr.
-  // using BorderFilterType = BinaryContourImageFilter<OutputImageType, OutputImageType>;
-  // auto borderFilter = BorderFilterType::New();
-  // borderFilter->SetInput(binaryFilter->GetOutput());
-  // borderFilter->SetForegroundValue(NumericTraits<OutputPixelType>::ZeroValue());
-  // borderFilter->SetBackgroundValue(NumericTraits<OutputPixelType>::max());
-  // borderFilter->SetFullyConnected(true);
-  // borderFilter->SetNumberOfWorkUnits(numberOfWorkUnits);
-  // progressAcc->RegisterInternalFilter(borderFilter, 0.23f);
-  // borderFilter->Update();
-
-  // this->GraftOutput(borderFilter->GetOutput());
-
   typename SampleType::Pointer sample = SampleType::New();
-  sample->SetMeasurementVectorSize(3);
-  typename TreeGeneratorType::Pointer treeGenerator = TreeGeneratorType::New();
-  treeGenerator->SetSample(sample);
-  treeGenerator->SetBucketSize(16);
-  treeGenerator->Update();
+  sample->SetMeasurementVectorSize(TInputImage::ImageDimension);
 
+  m_TreeGenerator->SetSample(sample);
+  m_TreeGenerator->SetBucketSize(16);
+  m_TreeGenerator->Update();
 
   // Set up the multithreaded processing
   typename ImageSource<OutputImageType>::ThreadStruct str;
@@ -191,11 +145,25 @@ DistanceImageFilter<TInputImage, TOutputImage>::ThreadedGenerateData(
   Ot.GoToBegin();
   It.GoToBegin();
 
+  using TreeType = typename TreeGeneratorType::KdTreeType;
+  typename TreeType::Pointer tree = m_TreeGenerator->GetOutput();
 
-  while (!Ot.IsAtEnd()) {
-    // cast to a real type is required on some platforms
-    const auto outputValue = static_cast<OutputPixelType>(
-        std::sqrt(static_cast<OutputRealType>(itk::Math::abs(Ot.Get()))));
+  while (!Ot.IsAtEnd())
+  {
+    auto index = Ot.GetIndex();
+    typename InputImageType::PointType point;
+    outputRegion->TransformIndexToPhysicalPoint(index, &point);
+
+    MeasurementVectorType queryPoint;
+    queryPoint[0] = point[0];
+    queryPoint[1] = point[1];
+    queryPoint[2] = point[2];
+
+    typename TreeType::InstanceIdentifierVectorType neighbors;
+    tree->Search(queryPoint, 1, neighbors);
+    auto measurement = tree->GetMeasurementVector(neighbors[0]);
+
+    std::cout << measurement << std::endl;
   }
 }
 

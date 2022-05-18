@@ -146,6 +146,7 @@ private:
   bool m_SquaredDistance{ false };
 
   const InputImageType * m_InputCache;
+  typename TreeGeneratorType::Pointer m_TreeGenerator {nullptr};
 };
 } // end namespace itk
 

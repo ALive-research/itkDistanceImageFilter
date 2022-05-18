@@ -2,7 +2,10 @@ cmake_minimum_required (VERSION 3.16)
 
 project(itkDistanceMap)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
+
 find_package(ITK REQUIRED)
+find_package(TCLAP REQUIRED)
 
 include(${ITK_USE_FILE})
 
