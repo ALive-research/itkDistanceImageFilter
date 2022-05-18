@@ -1,0 +1,10 @@
+itk_module(itkDistanceMap
+    ENABLE_SHARED
+    PRIVATE_DEPENDS
+  COMPILE_DEPENDS
+  ITKIOImageBase
+  ITKImageFilterBase
+  TEST_DEPENDS
+    DESCRIPTION
+    "${DOCUMENTATION}"
+  )
