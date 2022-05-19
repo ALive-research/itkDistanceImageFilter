@@ -1,15 +1,16 @@
 #ifndef itkDistanceImageFilter_hxx
 #define itkDistanceImageFilter_hxx
 
-#include "itkImageRegionIteratorWithIndex.h"
-#include "itkImageRegionIterator.h"
-#include "itkBinaryThresholdImageFilter.h"
-#include "itkBinaryContourImageFilter.h"
-#include "itkProgressReporter.h"
-#include "itkProgressAccumulator.h"
-#include "itkMath.h"
-#include "vnl/vnl_vector.h"
-#include "itkMath.h"
+#include <itkImageRegionIteratorWithIndex.h>
+#include <itkImageRegionIterator.h>
+#include <itkBinaryThresholdImageFilter.h>
+#include <itkBinaryContourImageFilter.h>
+#include <itkProgressReporter.h>
+#include <itkProgressAccumulator.h>
+#include <itkMath.h>
+
+#include <vnl/vnl_vector.h>
+#include <itkMath.h>
 
 namespace itk
 {
@@ -19,6 +20,7 @@ DistanceImageFilter<TInputImage, TOutputImage>::DistanceImageFilter()
   , m_Spacing(0.0)
   , m_InputCache(nullptr)
   , m_TreeGenerator(nullptr)
+  , m_Sample(nullptr)
 {
   this->DynamicMultiThreadingOff();
   this->m_TreeGenerator = TreeGeneratorType::New();
@@ -99,10 +101,37 @@ DistanceImageFilter<TInputImage, TOutputImage>::GenerateData()
   auto progressAcc = ProgressAccumulator::New();
   progressAcc->SetMiniPipelineFilter(this);
 
-  typename SampleType::Pointer sample = SampleType::New();
-  sample->SetMeasurementVectorSize(TInputImage::ImageDimension);
+  this->m_Sample = SampleType::New();
+  this->m_Sample->SetMeasurementVectorSize(TInputImage::ImageDimension);
 
-  m_TreeGenerator->SetSample(sample);
+  // KD-Tree generation
+  typename ConstNeighborhoodIteratorType::RadiusType radius({1,1,1});
+  ConstNeighborhoodIteratorType it(radius, m_InputCache, m_InputCache->GetLargestPossibleRegion());
+
+  for(it.GoToBegin(); !it.IsAtEnd(); ++it)
+  {
+    // The center of the window is not background
+    if (it.GetCenterPixel() != m_BackgroundValue)
+    {
+      for(int i=0; i<27; ++i)
+      {
+        bool withinBounds;
+        auto value = it.GetPixel(i, withinBounds);
+
+        if (withinBounds && it.GetCenterPixel() != value)
+        {
+          typename InputImageType::PointType point;
+          m_InputCache->TransformIndexToPhysicalPoint(it.GetIndex(), point);
+          MeasurementVectorType mv;
+          mv[0] = point[0]; mv[1] = point[1]; mv[2] = point[2];
+          m_Sample->PushBack(mv);
+          break;
+        }
+      }
+    }
+  }
+
+  m_TreeGenerator->SetSample(m_Sample);
   m_TreeGenerator->SetBucketSize(16);
   m_TreeGenerator->Update();
 
@@ -151,23 +180,31 @@ DistanceImageFilter<TInputImage, TOutputImage>::ThreadedGenerateData(
 
   while (!Ot.IsAtEnd())
   {
-    itk::Point<double, 3> point;
-    m_InputCache->TransformIndexToPhysicalPoint(It.GetIndex(), point);
+    itk::Point<float, 3> pointA;
+    m_InputCache->TransformIndexToPhysicalPoint(It.GetIndex(), pointA);
 
     MeasurementVectorType queryPoint;
-    queryPoint[0] = point[0];
-    queryPoint[1] = point[1];
-    queryPoint[2] = point[2];
+    queryPoint[0] = pointA[0];
+    queryPoint[1] = pointA[1];
+    queryPoint[2] = pointA[2];
 
     typename TreeType::InstanceIdentifierVectorType neighbors;
     unsigned int numNeighbors = 1;
     tree->Search(queryPoint, numNeighbors, neighbors);
     auto measurement = tree->GetMeasurementVector(neighbors[0]);
 
-    std::cout << measurement << std::endl;
+    itk::Point<float, 3> pointB;
+    pointB[0] = measurement[0];
+    pointB[1] = measurement[1];
+    pointB[2] = measurement[2];
+    auto dist = pointA.EuclideanDistanceTo(pointB);
+
+    Ot.Set(dist);
+
+    ++Ot;
+    ++It;
   }
 }
-
 
 /**
  * Standard "PrintSelf" method

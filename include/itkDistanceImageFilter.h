@@ -4,6 +4,7 @@
 #include "itkImageToImageFilter.h"
 #include "itkWeightedCentroidKdTreeGenerator.h"
 #include "itkListSample.h"
+#include <itkNeighborhoodIterator.h>
 
 namespace itk
 {
@@ -59,7 +60,8 @@ public:
   using OutputSpacingType = typename OutputImageType::SpacingType;
   using OutputImageRegionType = typename OutputImageType::RegionType;
 
-  using MeasurementVectorType = typename itk::Vector<typename TOutputImage::PixelType, OutputImageType::ImageDimension>;
+  using ConstNeighborhoodIteratorType = itk::ConstNeighborhoodIterator<InputImageType>;
+  using MeasurementVectorType = typename itk::Vector<typename TInputImage::PixelType, TInputImage::ImageDimension>;
   using SampleType = typename itk::Statistics::ListSample<MeasurementVectorType>;
   using TreeGeneratorType = typename itk::Statistics::KdTreeGenerator<SampleType>;
 
@@ -147,6 +149,7 @@ private:
 
   const InputImageType * m_InputCache;
   typename TreeGeneratorType::Pointer m_TreeGenerator;
+  typename SampleType::Pointer m_Sample;
 };
 } // end namespace itk
 

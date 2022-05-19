@@ -30,11 +30,13 @@ int main(int argc, char **argv)
     {
     TCLAP::CmdLine cmd("itkDistanceImageFilter");
 
-    TCLAP::ValueArg<std::string> inputArgument("o", "input", "Input file", true, "None", "string");
+    TCLAP::ValueArg<std::string> inputArgument("i", "input", "Input file", true, "None", "string");
     TCLAP::ValueArg<std::string> outputArgument("o", "output", "Output file", true, "None", "string");
 
     cmd.add(outputArgument);
     cmd.add(inputArgument);
+
+    cmd.parse(argc,argv);
 
     output = outputArgument.getValue();
     input = inputArgument.getValue();
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
   // Read input image
   // =========================================================================
   auto inputImageReader = InputImageReaderType::New();
-  inputImageReader->SetFileName(input);
+  inputImageReader->SetFileName(input.c_str());
   inputImageReader->Update();
 
   // =========================================================================
@@ -66,6 +68,14 @@ int main(int argc, char **argv)
   auto distanceImageFilter = DistanceImageFilterType::New();
   distanceImageFilter->SetInput(inputImageReader->GetOutput());
   distanceImageFilter->Update();
+
+  // =========================================================================
+  // Write the output
+  // =========================================================================
+  auto outputImageWriter = OutputImageWriterType::New();
+  outputImageWriter->SetInput(distanceImageFilter->GetOutput());
+  outputImageWriter->SetFileName(output);
+  outputImageWriter->Write();
 
   return EXIT_SUCCESS;
 }

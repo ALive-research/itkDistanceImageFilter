@@ -20,6 +20,8 @@ else()
   itk_module_impl()
 endif()
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} CACHE PATH "Executable output path" FORCE)
+
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE main.cxx)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${ITK_LIBRARIES})
