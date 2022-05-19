@@ -1,6 +1,8 @@
 #ifndef itkDistanceImageFilter_hxx
 #define itkDistanceImageFilter_hxx
 
+#include "itkDistanceImageFilter.h"
+
 #include <itkImageRegionIteratorWithIndex.h>
 #include <itkImageRegionIterator.h>
 #include <itkBinaryThresholdImageFilter.h>
