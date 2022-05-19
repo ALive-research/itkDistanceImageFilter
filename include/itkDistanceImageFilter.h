@@ -59,7 +59,7 @@ public:
   using OutputSpacingType = typename OutputImageType::SpacingType;
   using OutputImageRegionType = typename OutputImageType::RegionType;
 
-  using MeasurementVectorType = typename itk::Vector<TInputImage>;
+  using MeasurementVectorType = typename itk::Vector<typename TOutputImage::PixelType, OutputImageType::ImageDimension>;
   using SampleType = typename itk::Statistics::ListSample<MeasurementVectorType>;
   using TreeGeneratorType = typename itk::Statistics::KdTreeGenerator<SampleType>;
 
@@ -146,7 +146,7 @@ private:
   bool m_SquaredDistance{ false };
 
   const InputImageType * m_InputCache;
-  typename TreeGeneratorType::Pointer m_TreeGenerator {nullptr};
+  typename TreeGeneratorType::Pointer m_TreeGenerator;
 };
 } // end namespace itk
 

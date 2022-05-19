@@ -18,6 +18,7 @@ DistanceImageFilter<TInputImage, TOutputImage>::DistanceImageFilter()
   : m_BackgroundValue(NumericTraits<InputPixelType>::ZeroValue())
   , m_Spacing(0.0)
   , m_InputCache(nullptr)
+  , m_TreeGenerator(nullptr)
 {
   this->DynamicMultiThreadingOff();
   this->m_TreeGenerator = TreeGeneratorType::New();
@@ -150,9 +151,8 @@ DistanceImageFilter<TInputImage, TOutputImage>::ThreadedGenerateData(
 
   while (!Ot.IsAtEnd())
   {
-    auto index = Ot.GetIndex();
-    typename InputImageType::PointType point;
-    outputRegion->TransformIndexToPhysicalPoint(index, &point);
+    itk::Point<double, 3> point;
+    m_InputCache->TransformIndexToPhysicalPoint(It.GetIndex(), point);
 
     MeasurementVectorType queryPoint;
     queryPoint[0] = point[0];
@@ -160,7 +160,8 @@ DistanceImageFilter<TInputImage, TOutputImage>::ThreadedGenerateData(
     queryPoint[2] = point[2];
 
     typename TreeType::InstanceIdentifierVectorType neighbors;
-    tree->Search(queryPoint, 1, neighbors);
+    unsigned int numNeighbors = 1;
+    tree->Search(queryPoint, numNeighbors, neighbors);
     auto measurement = tree->GetMeasurementVector(neighbors[0]);
 
     std::cout << measurement << std::endl;
