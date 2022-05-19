@@ -201,7 +201,14 @@ DistanceImageFilter<TInputImage, TOutputImage>::ThreadedGenerateData(
     pointB[2] = measurement[2];
     auto dist = pointA.EuclideanDistanceTo(pointB);
 
-    Ot.Set(dist);
+    if(It.Value() != m_BackgroundValue && !m_InsideIsPositive)
+    {
+      Ot.Set(-dist);
+    }
+    else
+    {
+      Ot.Set(dist);
+    }
 
     ++Ot;
     ++It;

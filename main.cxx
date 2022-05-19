@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   // Read input image
   // =========================================================================
   auto inputImageReader = InputImageReaderType::New();
-  inputImageReader->SetFileName(input.c_str());
+  inputImageReader->SetFileName(input);
   inputImageReader->Update();
 
   // =========================================================================
@@ -67,6 +67,7 @@ int main(int argc, char **argv)
   // =========================================================================
   auto distanceImageFilter = DistanceImageFilterType::New();
   distanceImageFilter->SetInput(inputImageReader->GetOutput());
+  distanceImageFilter->InsideIsPositiveOff();
   distanceImageFilter->Update();
 
   // =========================================================================
