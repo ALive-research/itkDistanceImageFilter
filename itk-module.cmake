@@ -1,4 +1,4 @@
-itk_module(itkDistanceMap
+itk_module(itkDistanceImageFilter
     ENABLE_SHARED
     PRIVATE_DEPENDS
   COMPILE_DEPENDS
