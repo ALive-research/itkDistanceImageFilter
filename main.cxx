@@ -2,6 +2,7 @@
 #include "itkDistanceImageFilter.h"
 #include <itkImageFileWriter.h>
 #include <itkImageFileReader.h>
+#include <itkRealTimeClock.h>
 
 // TCLAP includes
 #include <tclap/ValueArg.h>
@@ -65,10 +66,15 @@ int main(int argc, char **argv)
   // =========================================================================
   // Compute distance map
   // =========================================================================
+  auto realTimeClock = itk::RealTimeClock::New();
   auto distanceImageFilter = DistanceImageFilterType::New();
   distanceImageFilter->SetInput(inputImageReader->GetOutput());
   distanceImageFilter->InsideIsPositiveOff();
+  auto start = realTimeClock->GetRealTimeStamp();
   distanceImageFilter->Update();
+  auto end = realTimeClock->GetRealTimeStamp();
+
+  std::cout << "Time (ms):" << (end - start).GetTimeInMilliSeconds() << std::endl;
 
   // =========================================================================
   // Write the output
