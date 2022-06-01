@@ -134,9 +134,6 @@ protected:
   }
 
 private:
-  void
-       Voronoi(unsigned int, OutputIndexType idx, OutputImageType * output);
-  bool Remove(OutputPixelType, OutputPixelType, OutputPixelType, OutputPixelType, OutputPixelType, OutputPixelType);
 
   InputPixelType   m_BackgroundValue;
   InputSpacingType m_Spacing;
